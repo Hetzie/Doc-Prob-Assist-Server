@@ -13,7 +13,9 @@ class ChatListApiView(generics.ListCreateAPIView):
     authentication_classes = [TokenAuthentication]
     permission_classes = [IsAuthenticated]
     serializer_class = ChatSerializer
-    queryset = Chat.objects.all()
+
+    def get_queryset(self):
+        return Chat.objects.filter(user=self.request.user)
 
 
 class ChatUpdateDeleteApiView(generics.RetrieveUpdateDestroyAPIView):
@@ -22,17 +24,6 @@ class ChatUpdateDeleteApiView(generics.RetrieveUpdateDestroyAPIView):
     serializer_class = ChatSerializer
     queryset = Chat.objects.all()
 
-
-class ChatListByUser(generics.ListAPIView):
-    authentication_classes = [TokenAuthentication]
-    permission_classes = [IsAuthenticated]
-    serializer_class = ChatSerializer
-    queryset = Chat.objects.all()
-
-    def list(self, request):
-        queryset = self.get_queryset().filter(user=request.user)
-        serializer = ChatSerializer(queryset, many=True)
-        return Response(serializer.data)
 
 # Query
 
@@ -210,5 +201,6 @@ class DocumentUpdateDeleteApiView(generics.RetrieveUpdateDestroyAPIView):
             request.data['embeddingStatus'] = Document.PENDING
         elif request.data.get('isVerified') == False:
             request.data['embeddingStatus'] = Document.NOT_APPROVED
+        print(request.data)
 
         return super().patch(request, *args, **kwargs)
