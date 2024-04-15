@@ -60,19 +60,8 @@ class Query(models.Model):
         return self.question
 
 
-class GoodResponse(models.Model):
-    question = models.CharField(max_length=256)
-    response = models.TextField()
-
-    def __str__(self):
-        return self.question
-
-
-class BadResponse(models.Model):
-    question = models.CharField(max_length=256)
-    response = models.TextField()
-    feedback = models.CharField(max_length=512, blank=True)
-    expected_answer = models.TextField(blank=True)
-
-    def __str__(self):
-        return self.question
+class QueryFeedBack(models.Model):
+    created_at = models.DateTimeField(auto_now_add=True)
+    rating = models.PositiveSmallIntegerField()
+    feedback = models.TextField(blank=True)
+    expected_response = models.TextField(blank=True)

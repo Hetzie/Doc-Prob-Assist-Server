@@ -1,14 +1,16 @@
-from django.shortcuts import render
 from rest_framework import generics, status
-from datetime import datetime
 from rest_framework.authentication import TokenAuthentication
 from rest_framework.permissions import IsAuthenticated, IsAdminUser
 from rest_framework.response import Response
 from .serializers import (ChatSerializer, QuerySerializer,
-                          Chat, Query, GoodResponse, BadResponse, Document, DocumentSerializer)
-
+                          Chat, Query, Document, DocumentSerializer, QueryFeedBack, QueryFeedBackSerializer)
+from .service import QueryChain
+from datetime import datetime
+query_chain = QueryChain()
 
 # Chats
+
+
 class ChatListApiView(generics.ListCreateAPIView):
     authentication_classes = [TokenAuthentication]
     permission_classes = [IsAuthenticated]
@@ -56,52 +58,28 @@ class QueryListByChat(generics.ListAPIView):
 # ---------------------------------------------------------------------------------------
 
 
-def temp_llm_ans(chat_id, doc_id, question):
-    doc_name = 'test'
-    doc_url = 'test'
-    if doc_id != None:
-        doc_obj = Document.objects.get(pk=doc_id)
-        doc_name = doc_obj.name
-        doc_url = f'media/{doc_name}/{doc_obj.file.name}'
-    return True, {'answer': 'the answer will be here.',
-                  'context': 'context here',
-                  'reference': [{'doc_name': doc_name,
-                                 'doc_url': doc_url,
-                                 'pg_no': 12}]}
-
-
-def regenerate_ans(question, context):
-    doc_name = 'test'
-    doc_url = 'test'
-    return True, {'answer': 'the regenerated answer will be here.',
-                  'context': 'context here',
-                  'reference': [{'doc_name': doc_name,
-                                 'doc_url': doc_url,
-                                 'pg_no': 12}]}
-
-
 class CreateAnswerApiView(generics.GenericAPIView):
     authentication_classes = [TokenAuthentication]
     permission_classes = [IsAuthenticated]
 
     def post(self, request):
-        chat_id = request.data.get("chat_id")
+        chat_id = request.data.get("id")
         doc_id = request.data.get("doc_id")
-        question = request.data.get("question")
+        question = request.data.get("query")
         time = datetime.now()
 
-        status, response = temp_llm_ans(chat_id, doc_id, question)
-        chat = Chat.objects.get(pk=chat_id)
-        doc = Document.objects.get(pk=doc_id)
+        query_response, context, reference = query_chain.resolve_query(
+            chat_id, doc_id, question)
 
-        query_obj = Query.objects.create(chat=chat, question=question, response=response['answer'],
-                                         time=time, context=response['context'], doc_id=doc)
-        if status == False:
-            return Response(status=400, data={'error': 'Not able to generate answer. Please try again later.'})
-        return Response(status=200,
-                        data={'query_id': query_obj.pk, 'chat_id': chat_id, 'doc_id': doc_id,
-                              'question': question, 'answer': query_obj.response,
-                              'time': time, 'refrence': response['reference']})
+        query_obj = Query.objects.create(
+            chat=chat_id, doc_id=doc_id, question=question,
+            time=time, context=context, response=query_response)
+
+        query_obj = QuerySerializer(query_obj)
+        return Response(data={
+            "query": query_obj.data,
+            "references": reference,
+        })
 
 
 class RegenerateAnswerApiView(generics.GenericAPIView):
@@ -110,60 +88,11 @@ class RegenerateAnswerApiView(generics.GenericAPIView):
 
     def post(seld, request):
         query_id = request.data.get('query_id')
-
         query_obj = Query.objects.get(pk=query_id)
-        question = query_obj.question
-        context = query_obj.context
-        chat_id = query_obj.chat.pk
-        time = datetime.now()
-        doc_id = query_obj.doc_id.pk
-
-        status, response = regenerate_ans(question, context)
-        query_obj.response = response['answer']
+        query_response = query_chain.regenerate_answer(query_obj.context)
+        query_obj.response = query_response
         query_obj.save()
-        if status == False:
-            return Response(status=400, data={'error': 'Not able to generate answer. Please try again later.'})
-        return Response(status=200,
-                        data={'query_id': query_id, 'chat_id': chat_id, 'doc_id': doc_id,
-                              'question': question, 'answer': response['answer'],
-                              'time': time, 'refrence': response['reference']})
-
-
-class GoodResponseApiView(generics.GenericAPIView):
-    authentication_classes = [TokenAuthentication]
-    permission_classes = [IsAuthenticated]
-
-    def post(self, request):
-        query_id = request.data.get('query_id')
-
-        query_obj = Query.objects.get(pk=query_id)
-        question = query_obj.question
-        response = query_obj.response
-
-        GoodResponse.objects.create(question=question, response=response)
-
-        return Response(data={"message": "Thank you! Your response has been saved."}, status=status.HTTP_201_CREATED)
-
-
-class BadresponseApiView(generics.GenericAPIView):
-    authentication_classes = [TokenAuthentication]
-    permission_classes = [IsAuthenticated]
-
-    def post(self, request):
-        query_id = request.data.get('query_id')
-        feedback = request.data.get('feedback')
-        expected_answer = request.data.get('expected_answer')
-
-        query_obj = Query.objects.get(pk=query_id)
-        question = query_obj.question
-        response = query_obj.response
-
-        BadResponse.objects.create(
-            question=question, response=response, feedback=feedback, expected_answer=expected_answer)
-
-        return Response(data={"message": "Thank you! Your response has been saved."}, status=status.HTTP_201_CREATED)
-
-# Document
+        return Response(QuerySerializer(query_obj).data)
 
 
 class DocumentUploadApiView(generics.ListCreateAPIView):
@@ -204,3 +133,10 @@ class DocumentUpdateDeleteApiView(generics.RetrieveUpdateDestroyAPIView):
         print(request.data)
 
         return super().patch(request, *args, **kwargs)
+
+
+class FeedBackListCreateAPIView(generics.ListCreateAPIView):
+    authentication_classes = [TokenAuthentication]
+    permission_classes = [IsAuthenticated]
+    queryset = QueryFeedBack.objects.all()
+    serializer_class = QueryFeedBack

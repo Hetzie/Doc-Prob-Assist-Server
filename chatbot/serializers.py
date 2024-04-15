@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from .models import Chat, Query, Document, GoodResponse, BadResponse
+from .models import Chat, Query, Document, QueryFeedBack
 import os
 import json
 
@@ -38,15 +38,7 @@ class DocumentSerializer(serializers.ModelSerializer):
         fields = "__all__"
 
 
-class GoodResponseSerializer(serializers.ModelSerializer):
-
+class QueryFeedBackSerializer(serializers.ModelSerializer):
     class Meta:
-        model = GoodResponse
-        fields = "__all__"
-
-
-class BadResponseSerializer(serializers.ModelSerializer):
-
-    class Meta:
-        model = BadResponse
+        model = QueryFeedBack
         fields = "__all__"
