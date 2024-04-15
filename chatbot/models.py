@@ -5,8 +5,7 @@ from rest_framework.authentication import get_user_model
 
 
 def create_file_path(self, filename):
-    name = self.name
-    return f'media/{name}/{filename}'
+    return f'media/docs/{filename}'
 
 
 class Chat(models.Model):
@@ -36,7 +35,7 @@ class Document(models.Model):
 
     name = models.CharField(max_length=100, unique=True)
     user = models.ForeignKey(
-        get_user_model(), on_delete=models.CASCADE, related_name='documents')
+        get_user_model(), on_delete=models.SET_NULL, related_name='documents', null=True)
     file = models.FileField(upload_to=create_file_path)
     isVerified = models.BooleanField(default=False)
     embeddingStatus = models.CharField(
@@ -48,19 +47,21 @@ class Document(models.Model):
 
 class Query(models.Model):
     chat = models.ForeignKey(
-        Chat, on_delete=models.CASCADE, related_name='queries')
+        Chat, on_delete=models.SET_NULL, related_name='queries', null=True)
     question = models.CharField(max_length=256)
     response = models.TextField()
     time = models.DateTimeField()
     context = models.TextField()
     doc_id = models.ForeignKey(
-        Document, on_delete=models.CASCADE, related_name='queries', null=True)
+        Document, on_delete=models.SET_NULL, related_name='queries', null=True)
 
     def __str__(self):
         return self.question
 
 
 class QueryFeedBack(models.Model):
+    query = models.OneToOneField(
+        Query, on_delete=models.CASCADE, related_name='feedback')
     created_at = models.DateTimeField(auto_now_add=True)
     rating = models.PositiveSmallIntegerField()
     feedback = models.TextField(blank=True)

@@ -109,6 +109,7 @@ class DocumentUploadApiView(generics.ListCreateAPIView):
         return super().get_queryset().filter(isVerified=True)
 
     def create(self, request, *args, **kwargs):
+        request.data['user'] = request.user.id
         if request.user.is_superuser:
             request.data['isVerified'] = True
             request.data['embeddingStatus'] = Document.PENDING
@@ -139,4 +140,4 @@ class FeedBackListCreateAPIView(generics.ListCreateAPIView):
     authentication_classes = [TokenAuthentication]
     permission_classes = [IsAuthenticated]
     queryset = QueryFeedBack.objects.all()
-    serializer_class = QueryFeedBack
+    serializer_class = QueryFeedBackSerializer
