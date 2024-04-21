@@ -11,6 +11,7 @@ import os
 import pandas as pd
 import numpy as np
 from langchain_community.docstore.document import Document
+from tqdm import tqdm
 
 
 class Command(BaseCommand):
@@ -36,7 +37,6 @@ class Command(BaseCommand):
         doc_list.extend(self.give_prompt_from_document(file_path=file_path))
 
         texts.extend(doc_list[0])
-        print(texts)
 
     def extract_dataframe_list(self, file_path, temp_dir):
         page = []
@@ -54,10 +54,10 @@ class Command(BaseCommand):
                     pdf = PdfDocument()
                     pdf.LoadFromFile(file_path)
                     total_pages = pdf.Pages.Count
-                    pdf.Split('/kaggle/working/temp_file_{0}.pdf')
-                    for i in range(total_pages):
-                        temp_html_name = f'/kaggle/working/temp_file_{i}.html'
-                        temp_pdf_name = f'/kaggle/working/temp_file_{i}.pdf'
+                    pdf.Split('./temp/temp_file_{0}.pdf')
+                    for i in tqdm(range(total_pages), desc='Extracting table from pages'):
+                        temp_html_name = f'./temp/temp_file_{i}.html'
+                        temp_pdf_name = f'./temp/temp_file_{i}.pdf'
 
                         doc = aw.Document(temp_pdf_name)
                         os.remove(temp_pdf_name)
@@ -142,7 +142,7 @@ class Command(BaseCommand):
         # filter individual table
         filtered_pages = []
         clean_tables = []
-        for i, df in enumerate(df_list):
+        for i, df in tqdm(enumerate(df_list), desc='Filtering Table'):
 
             #         df = df.fillna("")
             self.merge_same_column(df)
@@ -226,7 +226,7 @@ class Command(BaseCommand):
 
     def give_prompt_from_document(self, file_path):
         extracted_dataframes, pages = self.extract_dataframe_list(
-            file_path, '/kaggle/working/')
+            file_path, './temp/')
 
         filtered_tables, filtered_pages = self.filter_table(
             extracted_dataframes, pages)

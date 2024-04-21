@@ -39,6 +39,15 @@ class DocumentSerializer(serializers.ModelSerializer):
 
 
 class QueryFeedBackSerializer(serializers.ModelSerializer):
+    question = serializers.ReadOnlyField(source='query.question')
+    answer = serializers.ReadOnlyField(source='query.response')
+    username = serializers.ReadOnlyField(source='user.username')
+
+    def create(self, validated_data):
+        user = self.context['request'].user
+        validated_data['user'] = user
+        return super().create(validated_data)
+
     class Meta:
         model = QueryFeedBack
         fields = "__all__"

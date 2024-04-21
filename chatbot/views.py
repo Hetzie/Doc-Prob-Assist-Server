@@ -67,18 +67,25 @@ class CreateAnswerApiView(generics.GenericAPIView):
         doc_id = request.data.get("doc_id")
         question = request.data.get("query")
         time = datetime.now()
-
+        if doc_id:
+            doc = Document.objects.get(id=doc_id)
         query_response, context, reference = query_chain.resolve_query(
-            chat_id, doc_id, question)
+            question)
 
         query_obj = Query.objects.create(
-            chat=chat_id, doc_id=doc_id, question=question,
+            chat=Chat.objects.get(id=chat_id), doc_id=doc_id and doc, question=question,
             time=time, context=context, response=query_response)
 
         query_obj = QuerySerializer(query_obj)
         return Response(data={
             "query": query_obj.data,
-            "references": reference,
+            "references": [
+                {
+                    "docName": "Parts_of_Speech",
+                    "pageNumber": 8,
+                    "url": "http://127.0.0.1:8000/media/docs/Parts_of_Speech___DPP_01_Discussion_Notes.pdf"
+                }
+            ],
         })
 
 
@@ -117,7 +124,11 @@ class DocumentUploadApiView(generics.ListCreateAPIView):
             print('verified-', request.data.get('isVerified'),
                   'embedding status-', request.data.get('embeddingStatus'))
 
-        return super().create(request, *args, **kwargs)
+        response = super().create(request, *args, **kwargs)
+        if request.user.is_superuser:
+            query_chain.embedd_document(
+                Document.objects.get(pk=response.data['id']))
+        return response
 
 
 class DocumentUpdateDeleteApiView(generics.RetrieveUpdateDestroyAPIView):
@@ -131,9 +142,16 @@ class DocumentUpdateDeleteApiView(generics.RetrieveUpdateDestroyAPIView):
             request.data['embeddingStatus'] = Document.PENDING
         elif request.data.get('isVerified') == False:
             request.data['embeddingStatus'] = Document.NOT_APPROVED
-        print(request.data)
 
-        return super().patch(request, *args, **kwargs)
+        response = super().patch(request, *args, **kwargs)
+        if request.data.get('isVerified') == True:
+            query_chain.embedd_document(
+                Document.objects.get(pk=response.data['id']))
+        return response
+
+    def delete(self, request, pk):
+        query_chain.remove_document_embeddings(pk)
+        return super().delete(request, pk)
 
 
 class FeedBackListCreateAPIView(generics.ListCreateAPIView):

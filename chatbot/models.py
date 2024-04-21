@@ -62,6 +62,8 @@ class Query(models.Model):
 class QueryFeedBack(models.Model):
     query = models.OneToOneField(
         Query, on_delete=models.CASCADE, related_name='feedback')
+    user = models.ForeignKey(get_user_model(
+    ), on_delete=models.SET_NULL, related_name='feedbacks', null=True, default=None)
     created_at = models.DateTimeField(auto_now_add=True)
     rating = models.PositiveSmallIntegerField()
     feedback = models.TextField(blank=True)
