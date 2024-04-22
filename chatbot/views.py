@@ -4,9 +4,7 @@ from rest_framework.permissions import IsAuthenticated, IsAdminUser
 from rest_framework.response import Response
 from .serializers import (ChatSerializer, QuerySerializer,
                           Chat, Query, Document, DocumentSerializer, QueryFeedBack, QueryFeedBackSerializer)
-from .service import QueryChain
 from datetime import datetime
-query_chain = QueryChain()
 
 # Chats
 
@@ -69,8 +67,8 @@ class CreateAnswerApiView(generics.GenericAPIView):
         time = datetime.now()
         if doc_id:
             doc = Document.objects.get(id=doc_id)
-        query_response, context, reference = query_chain.resolve_query(
-            question)
+        # API Request
+        query_response, context, reference = '', '', ''
 
         query_obj = Query.objects.create(
             chat=Chat.objects.get(id=chat_id), doc_id=doc_id and doc, question=question,
@@ -96,7 +94,8 @@ class RegenerateAnswerApiView(generics.GenericAPIView):
     def post(seld, request):
         query_id = request.data.get('query_id')
         query_obj = Query.objects.get(pk=query_id)
-        query_response = query_chain.regenerate_answer(query_obj.context)
+        # API Request
+        query_response = ''
         query_obj.response = query_response
         query_obj.save()
         return Response(QuerySerializer(query_obj).data)
@@ -126,8 +125,8 @@ class DocumentUploadApiView(generics.ListCreateAPIView):
 
         response = super().create(request, *args, **kwargs)
         if request.user.is_superuser:
-            query_chain.embedd_document(
-                Document.objects.get(pk=response.data['id']))
+            doc = Document.objects.get(pk=response.data['id'])
+            # API Request
         return response
 
 
@@ -137,20 +136,22 @@ class DocumentUpdateDeleteApiView(generics.RetrieveUpdateDestroyAPIView):
     queryset = Document.objects.all()
     serializer_class = DocumentSerializer
 
-    def patch(self, request, *args, **kwargs):
+    def patch(self, request, pk, *args, **kwargs):
         if request.data.get('isVerified') == True:
             request.data['embeddingStatus'] = Document.PENDING
         elif request.data.get('isVerified') == False:
             request.data['embeddingStatus'] = Document.NOT_APPROVED
 
-        response = super().patch(request, *args, **kwargs)
+        response = super().patch(request, pk, *args, **kwargs)
         if request.data.get('isVerified') == True:
-            query_chain.embedd_document(
-                Document.objects.get(pk=response.data['id']))
+            # API Request
+            doc = Document.objects.get(pk=pk)
+
         return response
 
     def delete(self, request, pk):
-        query_chain.remove_document_embeddings(pk)
+        doc = Document.objects.get(pk=pk)
+        # API Request
         return super().delete(request, pk)
 
 
