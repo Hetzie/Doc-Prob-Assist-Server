@@ -77,7 +77,7 @@ class CreateAnswerApiView(generics.GenericAPIView):
         context = r.json()['context']
         reference = r.json()['reference']
         r = requests.post('http://127.0.0.1:1236/resolve-query/', data=(
-            {'query': question}))
+            {'query': context}))
         query_response = r.json()['answer']
 
         query_obj = Query.objects.create(
