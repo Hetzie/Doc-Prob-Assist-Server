@@ -211,13 +211,11 @@ class AnalyticsDataAPIView(generics.GenericAPIView):
 
         total_users = get_user_model().objects.count()
 
-        queries = Query.objects.select_related('feedback').all()
-        total_questions = queries.count()
-
         last_date = datetime.now()
         first_date = last_date-timedelta(days=6)
-        past_week_query = queries.filter(
+        past_week_query = Query.objects.select_related('feedback').filter(
             time__range=(first_date, last_date)).order_by('time')
+        total_questions = past_week_query.count()
 
         date_modified = first_date
         past_week_date = [first_date.date().strftime(format='%d %b')]
@@ -227,11 +225,9 @@ class AnalyticsDataAPIView(generics.GenericAPIView):
             past_week_date.append(
                 date_modified.date().strftime(format='%d %b'))
 
-        print(past_week_date)
         weekly_feedback = {}
         for date in past_week_date:
-            weekly_feedback[date] = {'good_response': 0,
-                                     'bad_response': 0, 'no_response': 0}
+            weekly_feedback[date] = [0, 0, 0]
         for q in past_week_query:
             try:
                 rating = q.feedback.rating
@@ -242,11 +238,11 @@ class AnalyticsDataAPIView(generics.GenericAPIView):
             date = q.time.date().strftime(format='%d %b')
 
             if rating > 3:
-                weekly_feedback[date]['good_response'] += 1
+                weekly_feedback[date][0] += 1
             elif rating == 0:
-                weekly_feedback[date]['no_response'] += 1
+                weekly_feedback[date][1] += 1
             else:
-                weekly_feedback[date]['bad_response'] += 1
+                weekly_feedback[date][2] += 1
 
         return Response({'weekly_feedback': weekly_feedback, 'total_documents': total_docs,
                          'embedded_documents': embedded_docs, 'total_users': total_users, 'total_questions': total_questions})
