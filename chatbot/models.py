@@ -5,7 +5,8 @@ from rest_framework.authentication import get_user_model
 
 
 def create_file_path(self, filename):
-    return f'media/docs/{filename}'
+    name = self.name
+    return f'media/docs/{name}/{filename}'
 
 
 class Chat(models.Model):
@@ -54,9 +55,10 @@ class Query(models.Model):
     context = models.TextField()
     doc_id = models.ForeignKey(
         Document, on_delete=models.SET_NULL, related_name='queries', null=True)
+    references = models.JSONField()
 
     def __str__(self):
-        return self.question
+        return f'{self.time.date()}_{self.question}'
 
 
 class QueryFeedBack(models.Model):

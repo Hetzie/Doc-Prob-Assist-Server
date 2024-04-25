@@ -4,7 +4,11 @@ from rest_framework.permissions import IsAuthenticated, IsAdminUser
 from rest_framework.response import Response
 from .serializers import (ChatSerializer, QuerySerializer,
                           Chat, Query, Document, DocumentSerializer, QueryFeedBack, QueryFeedBackSerializer)
-from datetime import datetime
+from datetime import datetime, timedelta
+import requests
+from django.conf import settings
+from rest_framework.authentication import get_user_model
+
 
 # Chats
 
@@ -68,22 +72,22 @@ class CreateAnswerApiView(generics.GenericAPIView):
         if doc_id:
             doc = Document.objects.get(id=doc_id)
         # API Request
-        query_response, context, reference = '', '', ''
+        r = requests.post('http://127.0.0.1:1235/retrive-doc/', data=(
+            {'name': doc_id and doc.name, 'query': question}))
+        context = r.json()['context']
+        reference = r.json()['reference']
+        r = requests.post('http://127.0.0.1:1236/resolve-query/', data=(
+            {'query': question}))
+        query_response = r.json()['answer']
 
         query_obj = Query.objects.create(
             chat=Chat.objects.get(id=chat_id), doc_id=doc_id and doc, question=question,
-            time=time, context=context, response=query_response)
+            time=time, context=context, response=query_response, references=reference)
 
         query_obj = QuerySerializer(query_obj)
         return Response(data={
             "query": query_obj.data,
-            "references": [
-                {
-                    "docName": "Parts_of_Speech",
-                    "pageNumber": 8,
-                    "url": "http://127.0.0.1:8000/media/docs/Parts_of_Speech___DPP_01_Discussion_Notes.pdf"
-                }
-            ],
+            "references": reference
         })
 
 
@@ -91,11 +95,14 @@ class RegenerateAnswerApiView(generics.GenericAPIView):
     authentication_classes = [TokenAuthentication]
     permission_classes = [IsAuthenticated]
 
-    def post(seld, request):
+    def post(self, request):
         query_id = request.data.get('query_id')
         query_obj = Query.objects.get(pk=query_id)
+        question = query_obj.question
         # API Request
-        query_response = ''
+        r = requests.post('http://127.0.0.1:1236/resolve-query/', data=(
+            {'query': question}))
+        query_response = r.json()['answer']
         query_obj.response = query_response
         query_obj.save()
         return Response(QuerySerializer(query_obj).data)
@@ -127,6 +134,12 @@ class DocumentUploadApiView(generics.ListCreateAPIView):
         if request.user.is_superuser:
             doc = Document.objects.get(pk=response.data['id'])
             # API Request
+            post_files = {
+                "file": (doc.file.path, open(doc.file.path, "rb"), 'multipart/form-data')
+            }
+            # print(f'PATH :: {doc.file.url}')
+            requests.post('http://127.0.0.1:1234/embedd-doc/', data=(
+                {'name': doc.name, 'source': doc.file.url}), files=post_files)
         return response
 
 
@@ -146,12 +159,20 @@ class DocumentUpdateDeleteApiView(generics.RetrieveUpdateDestroyAPIView):
         if request.data.get('isVerified') == True:
             # API Request
             doc = Document.objects.get(pk=pk)
+            post_files = {
+                "file": (doc.file.path, open(doc.file.path, "rb"), 'multipart/form-data')
+            }
+            # print(f'PATH :: {doc.file.url}')
+            requests.post('http://127.0.0.1:1234/embedd-doc/', data=(
+                {'name': doc.name, 'source': doc.file.url}), files=post_files)
 
         return response
 
     def delete(self, request, pk):
         doc = Document.objects.get(pk=pk)
         # API Request
+        requests.delete('http://127.0.0.1:1234/delete-doc/', data=(
+            {'name': doc.name, }), )
         return super().delete(request, pk)
 
 
@@ -160,3 +181,72 @@ class FeedBackListCreateAPIView(generics.ListCreateAPIView):
     permission_classes = [IsAuthenticated]
     queryset = QueryFeedBack.objects.all()
     serializer_class = QueryFeedBackSerializer
+
+
+class EmbeddingStatusChangeAPIView(generics.GenericAPIView):
+
+    def post(self, request):
+        name = request.data.get('name')
+        status = request.data.get('status')
+        doc_obj = Document.objects.get(name=name)
+        if status == Document.PROCESSING:
+            doc_obj.embeddingStatus = Document.PROCESSING
+        elif status == Document.COMPLETED:
+            doc_obj.embeddingStatus = Document.COMPLETED
+        doc_obj.save()
+        return Response(DocumentSerializer(doc_obj).data)
+
+# -------------------------------------------------------------------------------------------------------------------
+
+
+class AnalyticsDataAPIView(generics.GenericAPIView):
+    authentication_classes = [TokenAuthentication]
+    permission_classes = [IsAdminUser]
+
+    def get(self, request):
+        documents = Document.objects.all()
+        total_docs = documents.count()
+        embedded_docs = documents.filter(
+            embeddingStatus=Document.COMPLETED).count()
+
+        total_users = get_user_model().objects.count()
+
+        queries = Query.objects.select_related('feedback').all()
+        total_questions = queries.count()
+
+        last_date = datetime.now()
+        first_date = last_date-timedelta(days=6)
+        past_week_query = queries.filter(
+            time__range=(first_date, last_date)).order_by('time')
+
+        date_modified = first_date
+        past_week_date = [first_date.date().strftime(format='%d %b')]
+
+        while date_modified < last_date:
+            date_modified += timedelta(days=1)
+            past_week_date.append(
+                date_modified.date().strftime(format='%d %b'))
+
+        print(past_week_date)
+        weekly_feedback = {}
+        for date in past_week_date:
+            weekly_feedback[date] = {'good_response': 0,
+                                     'bad_response': 0, 'no_response': 0}
+        for q in past_week_query:
+            try:
+                rating = q.feedback.rating
+
+            except:
+                rating = 0
+
+            date = q.time.date().strftime(format='%d %b')
+
+            if rating > 3:
+                weekly_feedback[date]['good_response'] += 1
+            elif rating == 0:
+                weekly_feedback[date]['no_response'] += 1
+            else:
+                weekly_feedback[date]['bad_response'] += 1
+
+        return Response({'weekly_feedback': weekly_feedback, 'total_documents': total_docs,
+                         'embedded_documents': embedded_docs, 'total_users': total_users, 'total_questions': total_questions})

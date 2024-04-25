@@ -1,7 +1,8 @@
 from django.urls import path
 from .views import (
     ChatListApiView, ChatUpdateDeleteApiView, QueryListCreateApiView,
-    QueryUpdateDeleteApiView, QueryListByChat, CreateAnswerApiView, RegenerateAnswerApiView, DocumentUploadApiView, DocumentUpdateDeleteApiView, FeedBackListCreateAPIView)
+    QueryUpdateDeleteApiView, QueryListByChat, CreateAnswerApiView,
+    RegenerateAnswerApiView, DocumentUploadApiView, DocumentUpdateDeleteApiView, FeedBackListCreateAPIView, EmbeddingStatusChangeAPIView, AnalyticsDataAPIView)
 
 urlpatterns = [
     path('chats/', ChatListApiView.as_view()),
@@ -14,4 +15,6 @@ urlpatterns = [
     path('doc/', DocumentUploadApiView.as_view()),
     path('update-doc/<int:pk>', DocumentUpdateDeleteApiView.as_view()),
     path('feedback/', FeedBackListCreateAPIView.as_view()),
+    path('embedding-status-change/', EmbeddingStatusChangeAPIView.as_view()),
+    path('analytics/', AnalyticsDataAPIView.as_view()),
 ]
