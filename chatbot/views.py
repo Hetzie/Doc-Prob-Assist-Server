@@ -121,6 +121,11 @@ class DocumentUploadApiView(generics.ListCreateAPIView):
             return super().get_queryset().filter(embeddingStatus=Document.COMPLETED)
         return super().get_queryset().filter(isVerified=True)
 
+    def get(self, request, *args, **kwargs):
+        data = self.get_queryset()
+        serializer_obj = self.get_serializer_class()(data, many=True)
+        return Response(serializer_obj.data)
+
     def create(self, request, *args, **kwargs):
         request.data['user'] = request.user.id
         if request.user.is_superuser:
