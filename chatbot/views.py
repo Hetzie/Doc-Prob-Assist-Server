@@ -228,10 +228,10 @@ class AnalyticsDataAPIView(generics.GenericAPIView):
             except:
                 rating = 0
 
-        if rating > 3:
-            good_bad_resp['good_resp'] += 1
-        elif rating != 0:
-            good_bad_resp['bad_resp'] += 1
+            if rating > 3:
+                good_bad_resp['good_resp'] += 1
+            elif rating != 0:
+                good_bad_resp['bad_resp'] += 1
 
         last_date = datetime.now()
         first_date = last_date-timedelta(days=6)
