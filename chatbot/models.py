@@ -1,5 +1,6 @@
 from django.db import models
 from rest_framework.authentication import get_user_model
+from django_pandas.managers import DataFrameManager
 
 # Create your models here.
 
@@ -70,3 +71,5 @@ class QueryFeedBack(models.Model):
     rating = models.PositiveSmallIntegerField()
     feedback = models.TextField(blank=True)
     expected_response = models.TextField(blank=True)
+
+    objects = DataFrameManager()

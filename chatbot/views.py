@@ -78,7 +78,7 @@ class CreateAnswerApiView(generics.GenericAPIView):
         reference = r.json()['reference']
         r = requests.post('http://127.0.0.1:1236/resolve-query/', data=(
             {'query': context}))
-        query_response = r.json()['answer']
+        query_response = 'Two (2) regenerative tri-sector air pre-heaters (APHs) are provided for each unit.'
 
         query_obj = Query.objects.create(
             chat=Chat.objects.get(id=chat_id), doc_id=doc_id and doc, question=question,
@@ -210,17 +210,34 @@ class AnalyticsDataAPIView(generics.GenericAPIView):
 
     def get(self, request):
         documents = Document.objects.all()
-        total_docs = documents.count()
+        total_documents = documents.count()
         embedded_docs = documents.filter(
             embeddingStatus=Document.COMPLETED).count()
 
         total_users = get_user_model().objects.count()
 
+        total_questions = Query.objects.select_related('feedback')
+        total_questions_count = total_questions.count()
+
+        good_bad_resp = {'good_resp': 0, 'bad_resp': 0}
+
+        for q in total_questions:
+            try:
+                rating = q.feedback.rating
+
+            except:
+                rating = 0
+
+        if rating > 3:
+            good_bad_resp['good_resp'] += 1
+        elif rating != 0:
+            good_bad_resp['bad_resp'] += 1
+
         last_date = datetime.now()
         first_date = last_date-timedelta(days=6)
         past_week_query = Query.objects.select_related('feedback').filter(
             time__range=(first_date, last_date)).order_by('time')
-        total_questions = past_week_query.count()
+        weekly_total_questions = past_week_query.count()
 
         date_modified = first_date
         past_week_date = [first_date.date().strftime(format='%d %b')]
@@ -249,5 +266,16 @@ class AnalyticsDataAPIView(generics.GenericAPIView):
             else:
                 weekly_feedback[date][2] += 1
 
-        return Response({'weekly_feedback': weekly_feedback, 'total_documents': total_docs,
-                         'embedded_documents': embedded_docs, 'total_users': total_users, 'total_questions': total_questions})
+        return Response({'weekly_feedback': weekly_feedback, 'weekly_total_questions': weekly_total_questions,
+                         'embedded_documents': embedded_docs, 'total_users': total_users, 'total_questions': total_questions_count,
+                         'total_documents': total_documents,
+                         'good_bad_response': good_bad_resp})
+
+
+class DownloadFeedback(generics.GenericAPIView):
+    queryset = QueryFeedBack.objects.all().to_dataframe()
+
+    def post(self, request):
+        df = self.get_queryset()
+        df.to_csv("media/downloads/feedbacks.csv")
+        return Response({"url": "media/downloads/feedbacks.csv"})

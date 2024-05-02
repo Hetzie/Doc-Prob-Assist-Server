@@ -2,7 +2,8 @@ from django.urls import path
 from .views import (
     ChatListApiView, ChatUpdateDeleteApiView, QueryListCreateApiView,
     QueryUpdateDeleteApiView, QueryListByChat, CreateAnswerApiView,
-    RegenerateAnswerApiView, DocumentUploadApiView, DocumentUpdateDeleteApiView, FeedBackListCreateAPIView, EmbeddingStatusChangeAPIView, AnalyticsDataAPIView)
+    RegenerateAnswerApiView, DocumentUploadApiView, DocumentUpdateDeleteApiView, FeedBackListCreateAPIView,
+    EmbeddingStatusChangeAPIView, AnalyticsDataAPIView, DownloadFeedback)
 
 urlpatterns = [
     path('chats/', ChatListApiView.as_view()),
@@ -17,4 +18,5 @@ urlpatterns = [
     path('feedback/', FeedBackListCreateAPIView.as_view()),
     path('embedding-status-change/', EmbeddingStatusChangeAPIView.as_view()),
     path('analytics/', AnalyticsDataAPIView.as_view()),
+    path('get-feedback-download-url/', DownloadFeedback.as_view()),
 ]
