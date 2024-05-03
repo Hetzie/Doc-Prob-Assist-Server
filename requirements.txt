@@ -86,7 +86,7 @@ hyperlink==21.0.0
 idna==3.6
 imageio==2.34.0
 imageio-ffmpeg==0.4.9
-importlib_metadata==7.0.2
+importlib_metadata
 importlib_resources==6.3.0
 imutils==0.5.4
 incremental==22.10.0
