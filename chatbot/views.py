@@ -3,7 +3,7 @@ from rest_framework.authentication import TokenAuthentication
 from rest_framework.permissions import IsAuthenticated, IsAdminUser
 from rest_framework.response import Response
 from .serializers import (ChatSerializer, QuerySerializer,
-                          Chat, Query, Document, DocumentSerializer, QueryFeedBack, QueryFeedBackSerializer)
+                          Chat, Query, Document, DocumentSerializer, QueryFeedBack, QueryFeedBackSerializer, Directory, DirectorySerializer)
 from datetime import datetime, timedelta
 import requests
 from django.conf import settings
@@ -273,9 +273,16 @@ class AnalyticsDataAPIView(generics.GenericAPIView):
 
 
 class DownloadFeedback(generics.GenericAPIView):
-    queryset = QueryFeedBack.objects.all().to_dataframe()
+    queryset = QueryFeedBack.objects.all()
 
     def post(self, request):
-        df = self.get_queryset()
+        df = self.get_queryset().to_dataframe()
         df.to_csv("media/downloads/feedbacks.csv")
         return Response({"url": "media/downloads/feedbacks.csv"})
+
+
+class DirectoryListCreateApiView(generics.ListCreateAPIView):
+    authentication_classes = [TokenAuthentication]
+    permission_classes = [IsAuthenticated]
+    serializer_class = DirectorySerializer
+    queryset = Directory.objects.all()

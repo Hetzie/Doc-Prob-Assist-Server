@@ -3,7 +3,7 @@ from .views import (
     ChatListApiView, ChatUpdateDeleteApiView, QueryListCreateApiView,
     QueryUpdateDeleteApiView, QueryListByChat, CreateAnswerApiView,
     RegenerateAnswerApiView, DocumentUploadApiView, DocumentUpdateDeleteApiView, FeedBackListCreateAPIView,
-    EmbeddingStatusChangeAPIView, AnalyticsDataAPIView, DownloadFeedback)
+    EmbeddingStatusChangeAPIView, AnalyticsDataAPIView, DownloadFeedback, DirectoryListCreateApiView)
 
 urlpatterns = [
     path('chats/', ChatListApiView.as_view()),
@@ -18,5 +18,6 @@ urlpatterns = [
     path('feedback/', FeedBackListCreateAPIView.as_view()),
     path('embedding-status-change/', EmbeddingStatusChangeAPIView.as_view()),
     path('analytics/', AnalyticsDataAPIView.as_view()),
-    path('get-feedback-download-url/', DownloadFeedback.as_view()),
+    path('download/', DownloadFeedback.as_view()),
+    path('directory/', DirectoryListCreateApiView.as_view()),
 ]

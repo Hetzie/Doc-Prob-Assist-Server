@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from .models import Chat, Query, Document, QueryFeedBack
+from .models import Chat, Query, Document, QueryFeedBack, Directory
 import os
 import json
 
@@ -50,4 +50,10 @@ class QueryFeedBackSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = QueryFeedBack
+        fields = "__all__"
+
+
+class DirectorySerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Directory
         fields = "__all__"
