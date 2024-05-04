@@ -111,7 +111,7 @@ class RegenerateAnswerApiView(generics.GenericAPIView):
 class DocumentUploadApiView(generics.ListCreateAPIView):
     authentication_classes = [TokenAuthentication]
     permission_classes = [IsAuthenticated]
-    queryset = Document.objects.all()
+    queryset = Document.objects.order_by('directory')
     serializer_class = DocumentSerializer
 
     def get_queryset(self):
@@ -144,7 +144,7 @@ class DocumentUploadApiView(generics.ListCreateAPIView):
             }
             # print(f'PATH :: {doc.file.url}')
             requests.post('http://127.0.0.1:1234/embedd-doc/', data=(
-                {'name': doc.name, 'source': doc.file.url}), files=post_files)
+                {'name': doc.name, 'source': doc.file.url, "directory": doc.directory}), files=post_files)
         return response
 
 
@@ -169,7 +169,7 @@ class DocumentUpdateDeleteApiView(generics.RetrieveUpdateDestroyAPIView):
             }
             # print(f'PATH :: {doc.file.url}')
             requests.post('http://127.0.0.1:1234/embedd-doc/', data=(
-                {'name': doc.name, 'source': doc.file.url}), files=post_files)
+                {'name': doc.name, 'source': doc.file.url, "directory": doc.directory}), files=post_files)
 
         return response
 
