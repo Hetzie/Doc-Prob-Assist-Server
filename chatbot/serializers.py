@@ -32,6 +32,7 @@ class ChatSerializer(serializers.ModelSerializer):
 
 class DocumentSerializer(serializers.ModelSerializer):
     username = serializers.ReadOnlyField(source='user.username')
+    directory_name = serializers.ReadOnlyField(source='directory.name')
 
     class Meta:
         model = Document
