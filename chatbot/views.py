@@ -286,3 +286,10 @@ class DirectoryListCreateApiView(generics.ListCreateAPIView):
     permission_classes = [IsAuthenticated]
     serializer_class = DirectorySerializer
     queryset = Directory.objects.all()
+
+
+class DirectoryDeleteUpdateApiView(generics.RetrieveUpdateDestroyAPIView):
+    authentication_classes = [TokenAuthentication]
+    permission_classes = [IsAuthenticated]
+    serializer_class = DirectorySerializer
+    queryset = Directory.objects.all()

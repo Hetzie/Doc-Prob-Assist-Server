@@ -3,7 +3,8 @@ from .views import (
     ChatListApiView, ChatUpdateDeleteApiView, QueryListCreateApiView,
     QueryUpdateDeleteApiView, QueryListByChat, CreateAnswerApiView,
     RegenerateAnswerApiView, DocumentUploadApiView, DocumentUpdateDeleteApiView, FeedBackListCreateAPIView,
-    EmbeddingStatusChangeAPIView, AnalyticsDataAPIView, DownloadFeedback, DirectoryListCreateApiView)
+    EmbeddingStatusChangeAPIView, AnalyticsDataAPIView, DownloadFeedback, DirectoryListCreateApiView,
+    DirectoryDeleteUpdateApiView)
 
 urlpatterns = [
     path('chats/', ChatListApiView.as_view()),
@@ -20,4 +21,5 @@ urlpatterns = [
     path('analytics/', AnalyticsDataAPIView.as_view()),
     path('download/', DownloadFeedback.as_view()),
     path('directory/', DirectoryListCreateApiView.as_view()),
+    path('directory/<int:pk>', DirectoryDeleteUpdateApiView.as_view()),
 ]
