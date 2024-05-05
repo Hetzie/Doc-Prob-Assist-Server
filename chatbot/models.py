@@ -43,7 +43,7 @@ class Document(models.Model):
     user = models.ForeignKey(
         get_user_model(), on_delete=models.SET_NULL, related_name='documents', null=True)
     directory = models.ForeignKey(
-        Directory, on_delete=models.SET_NULL, null=True, default=None)
+        Directory, on_delete=models.SET_NULL, null=True, default=None, related_name="documents")
     file = models.FileField(upload_to=create_file_path)
     isVerified = models.BooleanField(default=False)
     embeddingStatus = models.CharField(

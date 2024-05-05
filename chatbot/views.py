@@ -67,13 +67,16 @@ class CreateAnswerApiView(generics.GenericAPIView):
     def post(self, request):
         chat_id = request.data.get("id")
         doc_id = request.data.get("doc_id")
+        dir_id = request.data.get("dir_id")
         question = request.data.get("query")
         time = datetime.now()
         if doc_id:
             doc = Document.objects.get(id=doc_id)
+        if dir_id:
+            dir = Directory.objects.get(id=dir_id)
         # API Request
         r = requests.post('http://127.0.0.1:1235/retrive-doc/', data=(
-            {'name': doc_id and doc.name, 'query': question}))
+            {'name': doc_id and doc.name, 'query': question, 'directory': dir_id and dir.name}))
         context = r.json()['context']
         reference = r.json()['reference']
         r = requests.post('http://127.0.0.1:1236/resolve-query/', data=(
@@ -144,7 +147,7 @@ class DocumentUploadApiView(generics.ListCreateAPIView):
             }
             # print(f'PATH :: {doc.file.url}')
             requests.post('http://127.0.0.1:1234/embedd-doc/', data=(
-                {'name': doc.name, 'source': doc.file.url, "directory": doc.directory}), files=post_files)
+                {'name': doc.name, 'source': doc.file.url, "directory": doc.directory and doc.directory.name}), files=post_files)
         return response
 
 
@@ -169,7 +172,7 @@ class DocumentUpdateDeleteApiView(generics.RetrieveUpdateDestroyAPIView):
             }
             # print(f'PATH :: {doc.file.url}')
             requests.post('http://127.0.0.1:1234/embedd-doc/', data=(
-                {'name': doc.name, 'source': doc.file.url, "directory": doc.directory}), files=post_files)
+                {'name': doc.name, 'source': doc.file.url, "directory": doc.directory and doc.directory.name}), files=post_files)
 
         return response
 
