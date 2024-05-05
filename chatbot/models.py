@@ -48,6 +48,7 @@ class Document(models.Model):
     isVerified = models.BooleanField(default=False)
     embeddingStatus = models.CharField(
         max_length=20, choices=EMBEDDING_CHOICES, default=NOT_APPROVED)
+    date = models.DateTimeField(auto_now_add=True)
 
     def __str__(self):
         return self.name
